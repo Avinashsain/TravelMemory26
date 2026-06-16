@@ -35,9 +35,10 @@
     mode: "0640"
 
 - name: Install backend dependencies
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: npm install
     chdir: /root/TravelMemory/backend
+  changed_when: true
 
 # ── 4. Frontend setup ──────────────────────────────────────────────────────
 - name: Deploy frontend .env file
@@ -48,44 +49,62 @@
     mode: "0640"
 
 - name: Install frontend dependencies
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: npm install
     chdir: /root/TravelMemory/frontend
+  changed_when: true
 
 - name: Build React frontend
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: npm run build
     chdir: /root/TravelMemory/frontend
   environment:
     CI: "false"
+  changed_when: true
 
 # ── 5. Install PM2 and serve globally ─────────────────────────────────────
 - name: Install PM2 globally
-  ansible.builtin.shell: npm install -g pm2
+  ansible.builtin.command: npm install -g pm2
+  changed_when: true
 
 - name: Install serve globally
-  ansible.builtin.shell: npm install -g serve
+  ansible.builtin.command: npm install -g serve
+  changed_when: true
 
 # ── 6. Start apps with PM2 ────────────────────────────────────────────────
 - name: Stop existing PM2 processes
-  ansible.builtin.shell: pm2 delete all || true
+  ansible.builtin.command: pm2 delete all
+  changed_when: true
+  failed_when: false
 
 - name: Start backend with PM2
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: pm2 start index.js --name "travel-backend"
     chdir: /root/TravelMemory/backend
+  changed_when: true
 
 - name: Start frontend with PM2
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: pm2 start serve --name "travel-frontend" -- -s build -l 3000
     chdir: /root/TravelMemory/frontend
+  changed_when: true
 
 - name: Save PM2 process list
-  ansible.builtin.shell: pm2 save
+  ansible.builtin.command: pm2 save
+  changed_when: true
 
-- name: Enable PM2 on startup
-  ansible.builtin.shell: pm2 startup
-  ignore_errors: true
+- name: Generate PM2 startup script
+  ansible.builtin.command: pm2 startup systemd -u root --hp /root
+  changed_when: true
+  register: webserver_pm2_startup_output
+
+- name: Enable PM2 systemd service
+  ansible.builtin.systemd:
+    name: pm2-root
+    enabled: true
+    state: started
+  changed_when: true
+  failed_when: false
 
 # ── 7. NGINX reverse proxy ─────────────────────────────────────────────────
 - name: Deploy NGINX config
@@ -117,7 +136,8 @@
     mode: "0644"
 
 - name: Test NGINX config
-  ansible.builtin.shell: nginx -t
+  ansible.builtin.command: nginx -t
+  changed_when: false
 
 - name: Restart NGINX
   ansible.builtin.systemd:

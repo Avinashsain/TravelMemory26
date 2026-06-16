@@ -17,11 +17,10 @@
 
 # ── 2. Add MongoDB 7.0 repository ─────────────────────────────────────────
 - name: Add MongoDB GPG key
-  ansible.builtin.shell: |
-    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-    gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
-  args:
-    creates: /usr/share/keyrings/mongodb-server-7.0.gpg
+  ansible.builtin.apt_key:
+    url: https://www.mongodb.org/static/pgp/server-7.0.asc
+    keyring: /usr/share/keyrings/mongodb-server-7.0.gpg
+    state: present
 
 - name: Add MongoDB apt repository
   ansible.builtin.copy:
