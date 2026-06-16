@@ -1,0 +1,144 @@
+---
+# roles/webserver/tasks/main.yml
+# Ubuntu 24 + apt
+
+# ── 1. System update & packages ───────────────────────────────────────────
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - curl
+      - nginx
+      - nodejs
+      - npm
+    state: present
+
+# ── 2. Clone the repository ────────────────────────────────────────────────
+- name: Clone TravelMemory repository
+  ansible.builtin.git:
+    repo: "https://github.com/Avinashsain/TravelMemory26.git"
+    dest: /root/TravelMemory
+    version: main
+    force: true
+
+# ── 3. Backend setup ───────────────────────────────────────────────────────
+- name: Deploy backend .env file
+  ansible.builtin.copy:
+    dest: /root/TravelMemory/backend/.env
+    content: |
+      PORT=3001
+      MONGO_URI={{ mongo_uri }}
+    mode: "0640"
+
+- name: Install backend dependencies
+  ansible.builtin.shell:
+    cmd: npm install
+    chdir: /root/TravelMemory/backend
+
+# ── 4. Frontend setup ──────────────────────────────────────────────────────
+- name: Deploy frontend .env file
+  ansible.builtin.copy:
+    dest: /root/TravelMemory/frontend/.env
+    content: |
+      REACT_APP_BACKEND_URL=http://{{ ansible_host }}:3001
+    mode: "0640"
+
+- name: Install frontend dependencies
+  ansible.builtin.shell:
+    cmd: npm install
+    chdir: /root/TravelMemory/frontend
+
+- name: Build React frontend
+  ansible.builtin.shell:
+    cmd: npm run build
+    chdir: /root/TravelMemory/frontend
+  environment:
+    CI: "false"
+
+# ── 5. Install PM2 and serve globally ─────────────────────────────────────
+- name: Install PM2 globally
+  ansible.builtin.shell: npm install -g pm2
+
+- name: Install serve globally
+  ansible.builtin.shell: npm install -g serve
+
+# ── 6. Start apps with PM2 ────────────────────────────────────────────────
+- name: Stop existing PM2 processes
+  ansible.builtin.shell: pm2 delete all || true
+
+- name: Start backend with PM2
+  ansible.builtin.shell:
+    cmd: pm2 start index.js --name "travel-backend"
+    chdir: /root/TravelMemory/backend
+
+- name: Start frontend with PM2
+  ansible.builtin.shell:
+    cmd: pm2 start serve --name "travel-frontend" -- -s build -l 3000
+    chdir: /root/TravelMemory/frontend
+
+- name: Save PM2 process list
+  ansible.builtin.shell: pm2 save
+
+- name: Enable PM2 on startup
+  ansible.builtin.shell: pm2 startup
+  ignore_errors: true
+
+# ── 7. NGINX reverse proxy ─────────────────────────────────────────────────
+- name: Deploy NGINX config
+  ansible.builtin.copy:
+    dest: /etc/nginx/sites-available/default
+    content: |
+      server {
+          listen 80;
+          server_name _;
+
+          location / {
+              proxy_pass http://127.0.0.1:3000;
+              proxy_http_version 1.1;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+
+          location /api/ {
+              proxy_pass http://127.0.0.1:3001;
+              proxy_http_version 1.1;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+    mode: "0644"
+
+- name: Test NGINX config
+  ansible.builtin.shell: nginx -t
+
+- name: Restart NGINX
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: restarted
+
+# ── 8. Security hardening ──────────────────────────────────────────────────
+- name: Disable root SSH login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+
+- name: Restart SSH
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted

@@ -1,0 +1,11 @@
+---
+# MongoDB on private EC2
+mongo_db_name: travelmemory
+mongo_app_user: tmuser
+mongo_app_password: "Str0ngP%40ssw0rd!"
+mongo_admin_password: "Adm1nP%40ssw0rd!"
+mongo_uri: "mongodb://{{ mongo_app_user }}:{{ mongo_app_password }}@10.0.2.168:27017/{{ mongo_db_name }}"
+
+# App ports
+backend_port: 3001
+frontend_port: 3000

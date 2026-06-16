@@ -1,0 +1,65 @@
+---
+# verify.yml – smoke-test the deployed stack
+# Run: ansible-playbook verify.yml
+
+- name: Verify web server
+  hosts: webservers
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Check Node.js version
+      ansible.builtin.command: node --version
+      register: node_ver
+      changed_when: false
+
+    - name: Print Node.js version
+      ansible.builtin.debug:
+        msg: "Node.js: {{ node_ver.stdout }}"
+
+    - name: Check PM2 process is running
+      ansible.builtin.command: pm2 list
+      register: pm2_list
+      changed_when: false
+      become: true
+      become_user: appuser
+
+    - name: Print PM2 list
+      ansible.builtin.debug:
+        msg: "{{ pm2_list.stdout_lines }}"
+
+    - name: Verify backend health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:3001/"
+        status_code: [200, 404]
+      register: backend_check
+
+    - name: Print backend status
+      ansible.builtin.debug:
+        msg: "Backend HTTP status: {{ backend_check.status }}"
+
+    - name: Verify NGINX is serving frontend
+      ansible.builtin.uri:
+        url: "http://localhost/"
+        status_code: 200
+      register: frontend_check
+
+    - name: Print frontend status
+      ansible.builtin.debug:
+        msg: "Frontend HTTP status: {{ frontend_check.status }}"
+
+- name: Verify database server
+  hosts: databases
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Check MongoDB service status
+      ansible.builtin.systemd:
+        name: mongod
+        state: started
+      register: mongo_status
+      changed_when: false
+      become: true
+
+    - name: Print MongoDB status
+      ansible.builtin.debug:
+        msg: "MongoDB service: {{ mongo_status.status }}"

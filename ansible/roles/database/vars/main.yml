@@ -1,0 +1,3 @@
+---
+# Subnet CIDR allowed to reach MongoDB (must match Terraform public_subnet_cidr)
+database_web_subnet_cidr: "10.0.1.0/24"

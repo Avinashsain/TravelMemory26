@@ -1,0 +1,140 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+
+  backend "s3" {
+    bucket       = "streamingappbucketb15"
+    key          = "travelmemory/terraform.tfstate"
+    region       = "us-west-2"
+    use_lockfile = true
+    encrypt      = true
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# ─────────────────────────────────────────
+# VPC
+# ─────────────────────────────────────────
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name        = "${var.project_name}-vpc"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# ─────────────────────────────────────────
+# Subnets
+# ─────────────────────────────────────────
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidr
+  availability_zone       = "${var.aws_region}a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name    = "${var.project_name}-public-subnet"
+    Project = var.project_name
+    Tier    = "public"
+  }
+}
+
+resource "aws_subnet" "private" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidr
+  availability_zone = "${var.aws_region}a"
+
+  tags = {
+    Name    = "${var.project_name}-private-subnet"
+    Project = var.project_name
+    Tier    = "private"
+  }
+}
+
+# ─────────────────────────────────────────
+# Internet Gateway
+# ─────────────────────────────────────────
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name    = "${var.project_name}-igw"
+    Project = var.project_name
+  }
+}
+
+# ─────────────────────────────────────────
+# NAT Gateway (for private subnet outbound)
+# ─────────────────────────────────────────
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name    = "${var.project_name}-nat-eip"
+    Project = var.project_name
+  }
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public.id
+
+  tags = {
+    Name    = "${var.project_name}-nat-gw"
+    Project = var.project_name
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+# ─────────────────────────────────────────
+# Route Tables
+# ─────────────────────────────────────────
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name    = "${var.project_name}-public-rt"
+    Project = var.project_name
+  }
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name    = "${var.project_name}-private-rt"
+    Project = var.project_name
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
+}

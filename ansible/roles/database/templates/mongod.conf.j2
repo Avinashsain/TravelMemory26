@@ -1,0 +1,25 @@
+# /etc/mongod.conf – managed by Ansible
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+storage:
+  dbPath: /var/lib/mongo
+  journal:
+    enabled: true
+
+processManagement:
+  fork: true
+  pidFilePath: /var/run/mongodb/mongod.pid
+  timeZoneInfo: /usr/share/zoneinfo
+
+net:
+  port: {{ mongo_port }}
+  # Bind only to localhost; web server reaches via private IP through SG rules
+  bindIp: 127.0.0.1,{{ ansible_default_ipv4.address }}
+
+security:
+  # authorization will be set to 'enabled' in a later task
+  authorization: disabled

@@ -1,0 +1,79 @@
+---
+# roles/database/tasks/main.yml
+# Ubuntu + apt
+
+# ── 1. System update ───────────────────────────────────────────────────────
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - curl
+      - python3-pymongo
+    state: present
+
+# ── 2. Add MongoDB 7.0 repository ─────────────────────────────────────────
+- name: Add MongoDB GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+    gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+  args:
+    creates: /usr/share/keyrings/mongodb-server-7.0.gpg
+
+- name: Add MongoDB apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/mongodb-org-7.0.list
+    content: |
+      deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse
+    mode: "0644"
+
+- name: Update apt cache after adding MongoDB repo
+  ansible.builtin.apt:
+    update_cache: true
+
+# ── 3. Install MongoDB ─────────────────────────────────────────────────────
+- name: Install MongoDB
+  ansible.builtin.apt:
+    name: mongodb-org
+    state: present
+
+# ── 4. Configure MongoDB bindIp ────────────────────────────────────────────
+- name: Configure MongoDB bindIp
+  ansible.builtin.lineinfile:
+    path: /etc/mongod.conf
+    regexp: "^  bindIp:"
+    line: "  bindIp: 127.0.0.1,{{ ansible_facts['default_ipv4']['address'] }}"
+
+# ── 5. Start MongoDB ───────────────────────────────────────────────────────
+- name: Enable and start MongoDB
+  ansible.builtin.systemd:
+    name: mongod
+    enabled: true
+    state: started
+
+- name: Wait for MongoDB to be ready
+  ansible.builtin.wait_for:
+    port: 27017
+    host: 127.0.0.1
+    timeout: 30
+
+# ── 6. Security hardening ──────────────────────────────────────────────────
+- name: Disable root SSH login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+
+- name: Restart SSH
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted

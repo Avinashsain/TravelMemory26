@@ -1,0 +1,14 @@
+---
+- name: Configure database server
+  hosts: databases
+  become: true
+  gather_facts: true
+  roles:
+    - role: database
+
+- name: Configure web server
+  hosts: webservers
+  become: true
+  gather_facts: true
+  roles:
+    - role: webserver
