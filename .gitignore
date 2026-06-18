@@ -52,3 +52,6 @@ temp/
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
+
+.vault_pass
+*.vault_pass
