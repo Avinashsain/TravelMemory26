@@ -20,7 +20,7 @@
 # ── 2. Clone the repository ────────────────────────────────────────────────
 - name: Clone TravelMemory repository
   ansible.builtin.git:
-    repo: "https://github.com/Avinashsain/TravelMemory26.git"
+    repo: "https://github.com/Avinashsain/TravelMemory.git"
     dest: /root/TravelMemory
     version: main
     force: true
