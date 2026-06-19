@@ -22,7 +22,7 @@
   ansible.builtin.git:
     repo: "https://github.com/Avinashsain/TravelMemory.git"
     dest: /root/TravelMemory
-    version: main
+    version: master
     force: true
 
 # ── 3. Backend setup ───────────────────────────────────────────────────────
