@@ -17,7 +17,7 @@
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Internet
@@ -35,11 +35,11 @@ Internet
     └── MongoDB 7.0
 ```
 
-> 📸 _Add screenshot: AWS VPC Architecture_
+![AWS VPC Architecture](./screenshots/aws-vpc-architecture.png)
 
 ---
 
-## ✅ Prerequisites
+## Prerequisites
 
 - AWS CLI configured (`aws configure`)
 - Terraform >= 1.3.0
@@ -53,7 +53,7 @@ curl ifconfig.me   # get your IP for trusted_ip
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TravelMemory/
@@ -86,7 +86,7 @@ TravelMemory/
 aws configure
 ```
 
-> 📸 _Add screenshot: AWS CLI configuration_
+![AWS CLI Configuration](./screenshots/aws-cli-configuration.png)
 
 ### Step 2 – Initialize Terraform
 
@@ -96,7 +96,7 @@ cp terraform.tfvars.example terraform.tfvars
 terraform init
 ```
 
-> 📸 _Add screenshot: terraform init output_
+![Terraform Init Output](./screenshots/terraform-init-output.png)
 
 ### Step 3 – S3 Backend + DynamoDB Locking
 
@@ -105,8 +105,9 @@ terraform apply -target=aws_dynamodb_table.terraform_lock
 terraform init -migrate-state
 ```
 
-> 📸 _Add screenshot: S3 bucket with state file_
-> 📸 _Add screenshot: DynamoDB lock table_
+![S3 bucket with state file](./screenshots/s3-bucket-with-state-file.png)
+![DynamoDB lock table](./screenshots/dynamoDB-lock-table.png)
+
 
 ### Step 4 – Plan and Apply
 
@@ -115,7 +116,9 @@ terraform plan
 terraform apply
 ```
 
-> 📸 _Add screenshot: terraform apply complete_
+![Terraform plan-1](./screenshots/terraform-plan-1.png)
+![Terraform plan-2](./screenshots/terraform-plan-2.png)
+![Terraform apply complete](./screenshots/terraform-init-output.png)
 
 ### Step 5 – Outputs
 
@@ -124,10 +127,8 @@ terraform output
 # web_server_public_ip = "100.49.217.31"
 # db_server_private_ip = "10.0.2.116"
 ```
-
-> 📸 _Add screenshot: terraform outputs_
-> 📸 _Add screenshot: EC2 instances in AWS Console_
-> 📸 _Add screenshot: Security groups_
+![Terraform Outputs](./screenshots/terraform-init-output.png)
+![EC2 instances in AWS Console](./screenshots/ec2-instances.png)
 
 ### Resources Created
 
@@ -184,7 +185,7 @@ ansible all -m ping
 # db  | SUCCESS => { "ping": "pong" }
 ```
 
-> 📸 _Add screenshot: ansible all -m ping success_
+![ansible all -m ping success](./screenshots/ansible-ping.png)
 
 ### Step 4 – Run Playbook
 
@@ -192,12 +193,12 @@ ansible all -m ping
 ansible-playbook site.yml
 ```
 
-> 📸 _Add screenshot: playbook running_
-> 📸 _Add screenshot: PLAY RECAP all ok_
+![Ansible Running](./screenshots/playbook-running.png)
+![Ansible All Ok](./screenshots/playbook-all-ok.png)
 
 ---
 
-## 🌐 Application Access
+## Application Access
 
 | Service | URL |
 |---|---|
@@ -210,14 +211,12 @@ ansible-playbook site.yml
 curl http://100.49.217.31:3001/trip
 ```
 
-> 📸 _Add screenshot: TravelMemory app in browser_
-> 📸 _Add screenshot: /trip API response_
-> 📸 _Add screenshot: pm2 list showing both processes_
-> 📸 _Add screenshot: systemctl status mongod_
+![TravelMemory app in browser](./screenshots/tm-browser.png)
+![TravelMemory app in add browser](./screenshots/tm-add-browser.png)
 
 ---
 
-## 🔒 Security
+## Security
 
 | Measure | Implementation |
 |---|---|
@@ -233,19 +232,23 @@ curl http://100.49.217.31:3001/trip
 
 ---
 
-## 🗑️ Teardown
+## Teardown
 
 ```bash
 cd terraform/
 terraform destroy
 ```
 
-> ⚠️ Deletes all AWS resources. S3 bucket has `prevent_destroy = true` — delete manually if needed.
+![Terraform destroy](./screenshots/terraform-destroy-1.png)
+![Terraform destroy done](./screenshots/terraform-destroy-2.png)
+
+
+> Deletes all AWS resources. S3 bucket has `prevent_destroy = true` — delete manually if needed.
 
 ---
 
-## 👤 Author
+## Author
 
 **Avinash Sain**  
 GitHub: https://github.com/Avinashsain  
-Repository: https://github.com/Avinashsain/TravelMemory
+Repository: https://github.com/Avinashsain/TravelMemory26
