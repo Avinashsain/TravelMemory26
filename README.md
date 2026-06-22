@@ -56,7 +56,7 @@ curl ifconfig.me   # get your IP for trusted_ip
 ## Project Structure
 
 ```
-TravelMemory/
+TravelMemory26/
 ├── terraform/
 │   ├── main.tf          # VPC, subnets, IGW, NAT Gateway
 │   ├── ec2.tf           # EC2 instances, key pair, Elastic IP
